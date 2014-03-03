@@ -47,7 +47,7 @@ Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
 Scope.prototype.$digest = function() {
   var dirty, ttl = 10;
   this.$$lastDirtyWatch = null;
-  this.$beginPhase("$digest");
+  this.$beginPhase('$digest');
 
   do {
     // while there are async tasks, do them
@@ -152,7 +152,7 @@ Scope.prototype.$evalAsync = function(expr) {
     }, 0);
   }
 
-    self.$$asyncQueue.push({scope: self, expression: expr});
+  self.$$asyncQueue.push({scope: self, expression: expr});
 };
 
 /*

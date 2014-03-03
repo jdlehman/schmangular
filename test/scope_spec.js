@@ -161,7 +161,7 @@ describe('Scope', function() {
         }
       );
 
-      expect((function() { scope.$digest(); })).toThrow();
+      expect(function() { scope.$digest(); }).toThrow();
     });
 
     it('ends the digest when the last watch that was dirty is clean', function() {
@@ -175,7 +175,7 @@ describe('Scope', function() {
             return scope.array[i];
           },
           function(newValue, oldValue, scope) {}
-        )
+        );
       });
 
       scope.$digest();

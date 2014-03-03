@@ -138,11 +138,21 @@ Scope.prototype.$apply = function(expr) {
 
 /*
  * Evaluates function asynchronously. This takes place in the current
- * digest cycle, but after the $evalAsync was called
+ * digest cycle, but after the $evalAsync was called. If a digest cycle
+ * is not already ongoing, start a digest cycle.
  * @expr: The function to execute asynchronously
  */
 Scope.prototype.$evalAsync = function(expr) {
-  this.$$asyncQueue.push({scope: this, expression: expr});
+  var self = this;
+  if(!self.$$phase && !self.$$asyncQueue.length) {
+    setTimeout(function() {
+      if(self.$$asyncQueue.length) {
+        self.$digest();
+      }
+    }, 0);
+  }
+
+    self.$$asyncQueue.push({scope: self, expression: expr});
 };
 
 /*
@@ -163,3 +173,4 @@ Scope.prototype.$beginPhase = function(phase) {
 Scope.prototype.$clearPhase = function() {
   this.$$phase = null;
 };
+

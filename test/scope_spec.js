@@ -1,11 +1,43 @@
 'use strict';
 
 describe('Scope', function() {
-  it('can be constructed and used as an object', function() {
-    var scope = new Scope();
-    scope.aProperty = 1;
+  describe('Scope properties', function() {
+    var scope;
 
-    expect(scope.aProperty).toBe(1);
+    beforeEach(function() {
+      scope = new Scope();
+    });
+
+    it('can be constructed and used as an object', function() {
+      scope.aProperty = 1;
+
+      expect(scope.aProperty).toBe(1);
+    });
+
+    it('has a $$phase field whose value is the current digest phase', function() {
+      scope.aValue = 'someValue';
+      scope.phaseInWatchFunction = undefined;
+      scope.phaserInListenerFunction = undefined;
+      scope.phaseInApplyFunction = undefined;
+
+      scope.$watch(
+        function(scope) {
+          scope.phaseInWatchFunction = scope.$$phase;
+          return scope.aValue;
+        },
+        function(newValue, oldValue, scope) {
+          scope.phaseInListenerFunction = scope.$$phase;
+        }
+      );
+
+      scope.$apply(function(scope) {
+        scope.phaseInApplyFunction = scope.$$phase;
+      });
+
+      expect(scope.phaseInWatchFunction).toBe('$digest');
+      expect(scope.phaseInListenerFunction).toBe('$digest');
+      expect(scope.phaseInApplyFunction).toBe('$apply');
+    });
   });
 
   describe('digest', function() {
@@ -355,6 +387,7 @@ describe('Scope', function() {
 
       expect(function() { scope.$digest(); }).toThrow();
     });
+
   });
 
 });

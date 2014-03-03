@@ -4,11 +4,14 @@
  * this.$$watchers: array of watchers on scope
  * this.$$lastDirtyWatch: last watcher that was dirty
  *   for purposes of short circuiting digest loop
+ *  this.$$asyncQueue: queue of async tasks to run in digest cycle
+ *  this.$$phase: phase of scope state, $digest, $apply, or null
  */
 function Scope() {
   this.$$watchers = [];
   this.$$lastDirtyWatch = null;
   this.$$asyncQueue = [];
+  this.$$phase = null;
 }
 
 /*
@@ -34,14 +37,17 @@ Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
 };
 
 /*
+ * Sets $$phase to $digest.
  * First completes all existing async tasks and then
  * runs digest loop at least once (all watchers executed), and then
  * continues running while the digest loop is dirty or if it has asyncTasks left.
- * this loop maxes out at 10 iterations and then throws an error
+ * this loop maxes out at 10 iterations and then throws an error.
+ * After completion clears $$phase.
  */
 Scope.prototype.$digest = function() {
   var dirty, ttl = 10;
   this.$$lastDirtyWatch = null;
+  this.$beginPhase("$digest");
 
   do {
     // while there are async tasks, do them
@@ -54,6 +60,7 @@ Scope.prototype.$digest = function() {
       throw '10 digest iterations reached';
     }
   } while(dirty || this.$$asyncQueue.length);
+  this.$clearPhase();
 };
 
 /*
@@ -113,14 +120,18 @@ Scope.prototype.$eval = function(expr, locals) {
 };
 
 /*
- * Evalutes a function a function in context of scope, then kicks off a digest.
+ * Sets $$phase to $apply.
+ * Evalutes a function a function in context of scope, clears the $$phase,
+ * and then kicks off a digest.
  * @expr: function to be executed in context of scope
  */
 Scope.prototype.$apply = function(expr) {
   try {
+    this.$beginPhase('$apply');
     return this.$eval(expr);
   }
   finally {
+    this.$clearPhase();
     this.$digest();
   }
 };
@@ -132,4 +143,23 @@ Scope.prototype.$apply = function(expr) {
  */
 Scope.prototype.$evalAsync = function(expr) {
   this.$$asyncQueue.push({scope: this, expression: expr});
+};
+
+/*
+ * If phase is not null, throws an error
+ * otherwise sets phase
+ * @phase: phase to set $$phase to
+ */
+Scope.prototype.$beginPhase = function(phase) {
+  if(this.$$phase) {
+    throw this.$$phase + ' already in progress.';
+  }
+  this.$$phase = phase;
+};
+
+/*
+ * Sets $$phase to null
+ */
+Scope.prototype.$clearPhase = function() {
+  this.$$phase = null;
 };

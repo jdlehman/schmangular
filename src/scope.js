@@ -53,8 +53,12 @@ Scope.prototype.$digest = function() {
   do {
     // while there are async tasks, do them
     while(this.$$asyncQueue.length) {
-      var asyncTask = this.$$asyncQueue.shift();
-      asyncTask.scope.$eval(asyncTask.expression);
+      try {
+        var asyncTask = this.$$asyncQueue.shift();
+        asyncTask.scope.$eval(asyncTask.expression);
+      } catch(e) {
+        console.error(e);
+      }
     }
     dirty = this.$$digestOnce();
     if((dirty || this.$$asyncQueue.length) && !(ttl--)) {
@@ -65,7 +69,11 @@ Scope.prototype.$digest = function() {
 
   // execute all $$postDigest functions
   while(this.$$postDigestQueue.length) {
-    this.$$postDigestQueue.shift()();
+    try {
+      this.$$postDigestQueue.shift()();
+    } catch(e) {
+      console.error(e);
+    }
   }
 };
 
@@ -79,18 +87,22 @@ Scope.prototype.$$digestOnce = function() {
   var watcher, newValue, oldValue, dirty;
 
   while(length--) {
-    watcher = this.$$watchers[length];
-    newValue = watcher.watchFn(this);
-    oldValue = watcher.last;
+    try {
+      watcher = this.$$watchers[length];
+      newValue = watcher.watchFn(this);
+      oldValue = watcher.last;
 
-    if(!this.$$areEqual(newValue, oldValue, watcher.valueEq)) {
-      this.$$lastDirtyWatch = watcher;
-      watcher.last = watcher.valueEq ? _.cloneDeep(newValue) : newValue;
-      watcher.listenerFn(newValue, oldValue, this);
-      dirty = true;
-    }
-    else if(this.$$lastDirtyWatch === watcher) {
-      return false;
+      if(!this.$$areEqual(newValue, oldValue, watcher.valueEq)) {
+        this.$$lastDirtyWatch = watcher;
+        watcher.last = watcher.valueEq ? _.cloneDeep(newValue) : newValue;
+        watcher.listenerFn(newValue, oldValue, this);
+        dirty = true;
+      }
+      else if(this.$$lastDirtyWatch === watcher) {
+        return false;
+      }
+    } catch(e) {
+      console.error(e);
     }
   }
 

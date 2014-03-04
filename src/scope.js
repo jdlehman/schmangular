@@ -4,8 +4,9 @@
  * this.$$watchers: array of watchers on scope
  * this.$$lastDirtyWatch: last watcher that was dirty
  *   for purposes of short circuiting digest loop
- *  this.$$asyncQueue: queue of async tasks to run in digest cycle
- *  this.$$phase: phase of scope state, $digest, $apply, or null
+ * this.$$asyncQueue: queue of async tasks to run in digest cycle
+ * this.$$phase: phase of scope state, $digest, $apply, or null
+ * this.$$postDigestQueue: queue of functions to execute AFTER digest cycle
  */
 function Scope() {
   this.$$watchers = [];
@@ -16,7 +17,8 @@ function Scope() {
 }
 
 /*
- * creates watcher and adds to $$watchers list
+ * creates watcher and adds to $$watchers list.
+ * calling a watch function will remove it from the $$watchers list.
  * @watchFn: watch function, returns value on scope to watch for changes on
  * @listenerFn: function that executes if watcher value has changed
  * @valueEq: when true, watches for changes in value, not just reference,
@@ -26,6 +28,7 @@ function Scope() {
  *   will not be equal to function reference)
  */
 Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
+  var self = this;
   var watcher = {
     watchFn: watchFn,
     listenerFn: listenerFn || function() {},
@@ -35,6 +38,14 @@ Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
 
   this.$$watchers.unshift(watcher);
   this.$$lastDirtyWatch = null;
+
+  return function() {
+    var index = self.$$watchers.indexOf(watcher);
+    if(index >= 0) {
+      self.$$watchers.splice(index, 1);
+      self.$$lastDirtyWatch = null;
+    }
+  };
 };
 
 /*
@@ -89,17 +100,19 @@ Scope.prototype.$$digestOnce = function() {
   while(length--) {
     try {
       watcher = this.$$watchers[length];
-      newValue = watcher.watchFn(this);
-      oldValue = watcher.last;
+      if(watcher) {
+        newValue = watcher.watchFn(this);
+        oldValue = watcher.last;
 
-      if(!this.$$areEqual(newValue, oldValue, watcher.valueEq)) {
-        this.$$lastDirtyWatch = watcher;
-        watcher.last = watcher.valueEq ? _.cloneDeep(newValue) : newValue;
-        watcher.listenerFn(newValue, oldValue, this);
-        dirty = true;
-      }
-      else if(this.$$lastDirtyWatch === watcher) {
-        return false;
+        if(!this.$$areEqual(newValue, oldValue, watcher.valueEq)) {
+          this.$$lastDirtyWatch = watcher;
+          watcher.last = watcher.valueEq ? _.cloneDeep(newValue) : newValue;
+          watcher.listenerFn(newValue, oldValue, this);
+          dirty = true;
+        }
+        else if(this.$$lastDirtyWatch === watcher) {
+          return false;
+        }
       }
     } catch(e) {
       console.error(e);

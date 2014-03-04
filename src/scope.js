@@ -12,6 +12,7 @@ function Scope() {
   this.$$lastDirtyWatch = null;
   this.$$asyncQueue = [];
   this.$$phase = null;
+  this.$$postDigestQueue = [];
 }
 
 /*
@@ -42,7 +43,7 @@ Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
  * runs digest loop at least once (all watchers executed), and then
  * continues running while the digest loop is dirty or if it has asyncTasks left.
  * this loop maxes out at 10 iterations and then throws an error.
- * After completion clears $$phase.
+ * After completion clears $$phase and then executes any $$postDigest functions in the queue.
  */
 Scope.prototype.$digest = function() {
   var dirty, ttl = 10;
@@ -61,6 +62,11 @@ Scope.prototype.$digest = function() {
     }
   } while(dirty || this.$$asyncQueue.length);
   this.$clearPhase();
+
+  // execute all $$postDigest functions
+  while(this.$$postDigestQueue.length) {
+    this.$$postDigestQueue.shift()();
+  }
 };
 
 /*
@@ -174,3 +180,10 @@ Scope.prototype.$clearPhase = function() {
   this.$$phase = null;
 };
 
+/*
+ * Adds function to run AFTER digest loop. Does not kick off digest loop.
+ * @fn: function to run after digest loop
+ */
+Scope.prototype.$$postDigest = function(fn) {
+  this.$$postDigestQueue.push(fn);
+};

@@ -1,0 +1,34 @@
+{
+  "bitwise": true,
+  "immed": true,
+  "newcap": true,
+  "noarg": true,
+  "noempty": true,
+  "nonew": true,
+  "trailing": true,
+  "maxlen": 200,
+  "boss": true,
+  "eqnull": true,
+  "expr": true,
+  "globalstrict": true,
+  "laxbreak": true,
+  "loopfunc": true,
+  "sub": true,
+  "undef": true,
+  "browser": true,
+
+  "globals": {
+    // 3rd party libs
+    "_": false,
+
+    // jasmine
+    "jasmine": false,
+    "it": false,
+    "describe": false,
+    "beforeEach": false,
+    "expect": false,
+
+    // general js
+    "setTimeout": false
+  }
+}

@@ -212,3 +212,14 @@ Scope.prototype.$clearPhase = function() {
 Scope.prototype.$$postDigest = function(fn) {
   this.$$postDigestQueue.push(fn);
 };
+
+/*
+ * Create a new child scope that prototypically inherits from
+ * the current (parent) scope
+ */
+Scope.prototype.$new = function() {
+  var ChildScope = function() {};
+  ChildScope.prototype = this;
+  var child = new ChildScope();
+  return child;
+};

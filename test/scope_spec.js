@@ -634,5 +634,90 @@ describe('Scope', function() {
     });
   });
 
+  describe('inheritance', function() {
+    it('inherits the parents properties', function() {
+      var parent = new Scope();
+      parent.value = [1, 2, 3];
+
+      var child = parent.$new();
+      expect(child.value).toEqual([1, 2, 3]);
+    });
+
+    it('does not cause a parent to inherit its properties', function() {
+      var parent = new Scope();
+
+      var child = parent.$new();
+      child.value = [1, 2, 3];
+
+      expect(parent.value).toBeUndefined();
+    });
+
+    it('inherits the parents properties whenever they are defined', function() {
+      var parent = new Scope();
+      var child = parent.$new();
+
+      parent.value = [1, 2, 3];
+
+      expect(child.value).toEqual([1, 2, 3]);
+    });
+
+    it('can maniuplate a parent scopes property', function() {
+      var parent = new Scope();
+      var child = parent.$new();
+      parent.value = [1, 2, 3];
+
+      child.value.push(4);
+
+      expect(child.value).toEqual([1, 2, 3, 4]);
+      expect(parent.value).toEqual([1, 2, 3, 4]);
+    });
+
+    it('can watch a property on the parent', function() {
+      var parent = new Scope();
+      var child = parent.$new();
+      parent.value = [1, 2, 3];
+      child.ctr = 0;
+
+      child.$watch(
+        function(scope) { return scope.value; },
+        function(newValue, oldValue, scope) {
+          scope.ctr++;
+        },
+        true
+      );
+
+      child.$digest();
+      expect(child.ctr).toBe(1);
+
+      parent.value.push(4);
+      child.$digest();
+      expect(child.ctr).toBe(2);
+    });
+
+    it('can be nested at any depth', function() {
+      var a = new Scope();
+      var aa = a.$new();
+      var aaa = aa.$new();
+      var aab = aa.$new();
+      var ab = a.$new();
+      var abb = ab.$new();
+
+      a.value = 1;
+
+      expect(aa.value).toBe(1);
+      expect(aaa.value).toBe(1);
+      expect(aab.value).toBe(1);
+      expect(ab.value).toBe(1);
+      expect(abb.value).toBe(1);
+
+      ab.anotherValue = 2;
+
+      expect(abb.anotherValue).toBe(2);
+      expect(aa.anotherValue).toBeUndefined();
+      expect(aaa.anotherValue).toBeUndefined();
+    });
+
+  });
+
 });
 

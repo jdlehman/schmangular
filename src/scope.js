@@ -215,11 +215,13 @@ Scope.prototype.$$postDigest = function(fn) {
 
 /*
  * Create a new child scope that prototypically inherits from
- * the current (parent) scope
+ * the current (parent) scope.
+ * Child scopes have their own $$watchers list
  */
 Scope.prototype.$new = function() {
   var ChildScope = function() {};
   ChildScope.prototype = this;
   var child = new ChildScope();
+  child.$$watchers = [];
   return child;
 };

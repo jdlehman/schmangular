@@ -7,6 +7,7 @@
  * this.$$asyncQueue: queue of async tasks to run in digest cycle
  * this.$$phase: phase of scope state, $digest, $apply, or null
  * this.$$postDigestQueue: queue of functions to execute AFTER digest cycle
+ * this.$$children: array of child scopes
  */
 function Scope() {
   this.$$watchers = [];
@@ -14,6 +15,7 @@ function Scope() {
   this.$$asyncQueue = [];
   this.$$phase = null;
   this.$$postDigestQueue = [];
+  this.$$children = [];
 }
 
 /*
@@ -89,35 +91,42 @@ Scope.prototype.$digest = function() {
 };
 
 /*
- * calls watch on all watchers on scope.
+ * calls watch on all watchers on scope (and all children scopes)
  * returns true if any of the watchers were dirty.
  * short circuits if the last watcher that was dirty is no longer so.
  */
 Scope.prototype.$$digestOnce = function() {
-  var length = this.$$watchers.length;
-  var watcher, newValue, oldValue, dirty;
+  var dirty;
+  var self = this;
+  this.$$everyScope(function(scope) {
+    var length = scope.$$watchers.length;
+    var watcher, newValue, oldValue;
 
-  while(length--) {
-    try {
-      watcher = this.$$watchers[length];
-      if(watcher) {
-        newValue = watcher.watchFn(this);
-        oldValue = watcher.last;
+    while(length--) {
+      try {
+        watcher = scope.$$watchers[length];
+        if(watcher) {
+          newValue = watcher.watchFn(scope);
+          oldValue = watcher.last;
 
-        if(!this.$$areEqual(newValue, oldValue, watcher.valueEq)) {
-          this.$$lastDirtyWatch = watcher;
-          watcher.last = watcher.valueEq ? _.cloneDeep(newValue) : newValue;
-          watcher.listenerFn(newValue, oldValue, this);
-          dirty = true;
+          if(!scope.$$areEqual(newValue, oldValue, watcher.valueEq)) {
+            self.$$lastDirtyWatch = watcher;
+            watcher.last = watcher.valueEq ? _.cloneDeep(newValue) : newValue;
+            watcher.listenerFn(newValue, oldValue, scope);
+            dirty = true;
+          }
+          else if(self.$$lastDirtyWatch === watcher) {
+            dirty = false;
+            return false;
+          }
         }
-        else if(this.$$lastDirtyWatch === watcher) {
-          return false;
-        }
+      } catch(e) {
+        console.error(e);
       }
-    } catch(e) {
-      console.error(e);
     }
-  }
+
+    return true;
+  });
 
   return dirty;
 };
@@ -215,13 +224,32 @@ Scope.prototype.$$postDigest = function(fn) {
 
 /*
  * Create a new child scope that prototypically inherits from
- * the current (parent) scope.
- * Child scopes have their own $$watchers list
+ * the current (parent) scope. Add child scope to $$children array on parent scope.
+ * child.$$watchers: list of watchers on child scope
+ * child.$children: list of child scopes
  */
 Scope.prototype.$new = function() {
   var ChildScope = function() {};
   ChildScope.prototype = this;
   var child = new ChildScope();
+  this.$$children.push(child);
   child.$$watchers = [];
+  child.$$children = [];
   return child;
+};
+
+/*
+ * Run a function on every scope (recursively runs on children)
+ * @fn: function to run on every scope
+ */
+Scope.prototype.$$everyScope = function(fn) {
+  if(fn(this)) {
+    return this.$$children.every(function(child) {
+      return child.$$everyScope(fn);
+    });
+  }
+  else {
+    return false;
+  }
+
 };

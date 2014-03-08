@@ -787,6 +787,47 @@ describe('Scope', function() {
         parent.$digest();
         expect(child.valueWas).toBe('val');
       });
+
+      it('digests from root scope on $apply', function() {
+        var parent = new Scope();
+        var child = parent.$new();
+        var child2 = child.$new()
+
+        parent.value = 'val';
+        parent.ctr = 0;
+        parent.$watch(
+          function(scope) { return scope.value; },
+          function(newValue, oldValue, scope) {
+            scope.ctr++;
+          }
+        );
+
+        child2.$apply(function(scope) {});
+
+        expect(parent.ctr).toBe(1);
+      });
+
+      it('schedules a digest from root scope on $evalAsync', function(done) {
+        var parent = new Scope();
+        var child = parent.$new();
+        var child2 = child.$new();
+
+        parent.value = 'val';
+        parent.ctr = 0;
+        parent.$watch(
+          function(scope) { return scope.value; },
+          function(newValue, oldValue, scope) {
+            scope.ctr++;
+          }
+        );
+
+        child2.$evalAsync(function(scope) {});
+
+        setTimeout(function() {
+          expect(parent.ctr).toBe(1);
+          done();
+        }, 50);
+      });
     });
 
   });

@@ -8,6 +8,7 @@
  * this.$$phase: phase of scope state, $digest, $apply, or null
  * this.$$postDigestQueue: queue of functions to execute AFTER digest cycle
  * this.$$children: array of child scopes
+ * this.$$root: make root scope available to children scopes
  */
 function Scope() {
   this.$$watchers = [];
@@ -16,6 +17,7 @@ function Scope() {
   this.$$phase = null;
   this.$$postDigestQueue = [];
   this.$$children = [];
+  this.$$root = this;
 }
 
 /*
@@ -97,7 +99,6 @@ Scope.prototype.$digest = function() {
  */
 Scope.prototype.$$digestOnce = function() {
   var dirty;
-  var self = this;
   this.$$everyScope(function(scope) {
     var length = scope.$$watchers.length;
     var watcher, newValue, oldValue;
@@ -110,12 +111,12 @@ Scope.prototype.$$digestOnce = function() {
           oldValue = watcher.last;
 
           if(!scope.$$areEqual(newValue, oldValue, watcher.valueEq)) {
-            self.$$lastDirtyWatch = watcher;
+            scope.$$root.$$lastDirtyWatch = watcher;
             watcher.last = watcher.valueEq ? _.cloneDeep(newValue) : newValue;
             watcher.listenerFn(newValue, oldValue, scope);
             dirty = true;
           }
-          else if(self.$$lastDirtyWatch === watcher) {
+          else if(scope.$$root.$$lastDirtyWatch === watcher) {
             dirty = false;
             return false;
           }
@@ -162,7 +163,7 @@ Scope.prototype.$eval = function(expr, locals) {
 /*
  * Sets $$phase to $apply.
  * Evalutes a function a function in context of scope, clears the $$phase,
- * and then kicks off a digest.
+ * and then kicks off a digest starting at the root scope.
  * @expr: function to be executed in context of scope
  */
 Scope.prototype.$apply = function(expr) {
@@ -172,14 +173,14 @@ Scope.prototype.$apply = function(expr) {
   }
   finally {
     this.$clearPhase();
-    this.$digest();
+    this.$$root.$digest();
   }
 };
 
 /*
  * Evaluates function asynchronously. This takes place in the current
  * digest cycle, but after the $evalAsync was called. If a digest cycle
- * is not already ongoing, start a digest cycle.
+ * is not already ongoing, start a digest cycle off of the root scope.
  * @expr: The function to execute asynchronously
  */
 Scope.prototype.$evalAsync = function(expr) {
@@ -187,7 +188,7 @@ Scope.prototype.$evalAsync = function(expr) {
   if(!self.$$phase && !self.$$asyncQueue.length) {
     setTimeout(function() {
       if(self.$$asyncQueue.length) {
-        self.$digest();
+        self.$$root.$digest();
       }
     }, 0);
   }

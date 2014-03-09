@@ -940,6 +940,35 @@ describe('Scope', function() {
       });
     });
 
+    describe('destroying scopes', function() {
+      it('is no longer digested when $destroy has been called', function() {
+        var parent = new Scope();
+        var child = parent.$new();
+
+        child.value = [1, 2, 3];
+        child.ctr = 0;
+        child.$watch(
+          function(scope) { return scope.value; },
+          function(newValue, oldValue, scope) {
+            scope.ctr++;
+          },
+          true
+        );
+
+        parent.$digest();
+        expect(child.ctr).toBe(1);
+
+        child.value.push(4);
+        parent.$digest();
+        expect(child.ctr).toBe(2);
+
+        child.$destroy();
+        child.value.push(5);
+        parent.$digest();
+        expect(child.ctr).toBe(2);
+      });
+    });
+
   });
 
 });

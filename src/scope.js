@@ -225,14 +225,30 @@ Scope.prototype.$$postDigest = function(fn) {
 
 /*
  * Create a new child scope that prototypically inherits from
- * the current (parent) scope. Add child scope to $$children array on parent scope.
+ * the current (parent) scope (unless isolated is true).
+ * Add child scope to $$children array on parent scope.
+ * @isolated: if true, scope is isolated and does not protypically inherit from parent. if 
+ * false or undefined, it prototypically inherits
  * child.$$watchers: list of watchers on child scope
  * child.$children: list of child scopes
  */
-Scope.prototype.$new = function() {
-  var ChildScope = function() {};
-  ChildScope.prototype = this;
-  var child = new ChildScope();
+Scope.prototype.$new = function(isolated) {
+  var child;
+  if(isolated) {
+    child = new Scope();
+    // add properties so isolate scopes
+    // have access to these values as they cannot look up
+    // the prototype. this allows $apply and $evalAsync to work
+    child.$$root = this.$$root;
+    child.$$lastDirtyWatch = this.$$lastDirtyWatch;
+    child.$$asyncQueue = this.$$asyncQueue;
+    child.$$postDigestQueue = this.$$postDigestQueue;
+  }
+  else {
+    var ChildScope = function() {};
+    ChildScope.prototype = this;
+    child = new ChildScope();
+  }
   this.$$children.push(child);
   child.$$watchers = [];
   child.$$children = [];

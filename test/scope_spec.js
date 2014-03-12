@@ -791,7 +791,7 @@ describe('Scope', function() {
       it('digests from root scope on $apply', function() {
         var parent = new Scope();
         var child = parent.$new();
-        var child2 = child.$new()
+        var child2 = child.$new();
 
         parent.value = 'val';
         parent.ctr = 0;
@@ -969,6 +969,199 @@ describe('Scope', function() {
       });
     });
 
+    describe('$watchCollection', function() {
+      var scope;
+
+      beforeEach(function() {
+        scope = new Scope();
+      });
+
+      it('works like a normal watch for non-collections', function() {
+        var newValueProvided;
+        var oldValueProvided;
+
+        scope.value = 42;
+        scope.ctr = 0;
+
+        scope.$watchCollection(
+          function(scope) { return scope.value; },
+          function(newVal, oldVal, scope) {
+            newValueProvided = newVal;
+            oldValueProvided = oldVal;
+            scope.ctr++;
+          }
+        );
+
+        scope.$digest();
+        expect(scope.ctr).toBe(1);
+        expect(newValueProvided).toBe(scope.value);
+        expect(oldValueProvided).toBe(scope.value);
+
+        scope.value = 43;
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+      });
+
+      it('notices when the value becomes an array', function() {
+        scope.ctr = 0;
+
+        scope.$watchCollection(
+          function(scope) { return scope.arr; },
+          function(newVal, oldVal, scope) {
+            scope.ctr++;
+          }
+        );
+
+        scope.$digest();
+        expect(scope.ctr).toBe(1);
+
+        scope.arr = [1, 2, 3];
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+      });
+
+      it('notices an item added to an array', function() {
+        scope.arr = [1, 2, 3];
+        scope.ctr = 0;
+
+        scope.$watchCollection(
+          function(scope) { return scope.arr; },
+          function(newVal, oldVal, scope) {
+            scope.ctr++;
+          }
+        );
+
+        scope.$digest();
+        expect(scope.ctr).toBe(1);
+
+        scope.arr.push(4);
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+      });
+
+      it('notices an item removed from an array', function() {
+        scope.arr = [1, 2, 3];
+        scope.ctr = 0;
+
+        scope.$watchCollection(
+          function(scope) { return scope.arr; },
+          function(newVal, oldVal, scope) {
+            scope.ctr++;
+          }
+        );
+
+        scope.$digest();
+        expect(scope.ctr).toBe(1);
+
+        scope.arr.shift();
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+      });
+
+      it('notices an item replaced in an array', function() {
+        scope.arr = [1, 2, 3];
+        scope.ctr = 0;
+
+        scope.$watchCollection(
+          function(scope) { return scope.arr; },
+          function(newVal, oldVal, scope) {
+            scope.ctr++;
+          }
+        );
+
+        scope.$digest();
+        expect(scope.ctr).toBe(1);
+
+        scope.arr[1] = 42;
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+      });
+
+      it('notices items reordered in an array', function() {
+        scope.arr = [2, 1, 3];
+        scope.ctr = 0;
+
+        scope.$watchCollection(
+          function(scope) { return scope.arr; },
+          function(newVal, oldVal, scope) {
+            scope.ctr++;
+          }
+        );
+
+        scope.$digest();
+        expect(scope.ctr).toBe(1);
+
+        scope.arr.sort();
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+      });
+
+      it('notices an item replaced in an arguments object', function() {
+        (function() {
+          scope.arrayLike = arguments;
+        })(1, 2, 3);
+        scope.ctr = 0;
+
+        scope.$watchCollection(
+          function(scope) { return scope.arrayLike; },
+          function(newVal, oldVal, scope) {
+            scope.ctr++;
+          }
+        );
+
+        scope.$digest();
+        expect(scope.ctr).toBe(1);
+
+        scope.arrayLike[1] = 42;
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+      });
+
+      it('notices an item replaced in a NodeList object', function() {
+        document.documentElement.appendChild(document.createElement('div'));
+        scope.arrayLike = document.getElementsByTagName('div');
+        scope.ctr = 0;
+
+        scope.$watchCollection(
+          function(scope) { return scope.arrayLike; },
+          function(newVal, oldVal, scope) {
+            scope.ctr++;
+          }
+        );
+
+        scope.$digest();
+        expect(scope.ctr).toBe(1);
+
+        document.documentElement.appendChild(document.createElement('div'));
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+      });
+
+    });
   });
 
 });

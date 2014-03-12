@@ -287,3 +287,65 @@ Scope.prototype.$destroy = function() {
     siblings.splice(indexOfThis, 1);
   }
 };
+
+/*
+ * Watch changes on return value of watch function, which should
+ * be an array or object (falls back to $watch for non-collection types).
+ *
+ * For arrays/array-like objects (arguments): detects change in size,
+ * reordered, or replaces values, and a non-array becoming an array.
+ *
+ * On changes, executes listenerFn.
+ */
+Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
+  var self = this;
+  var newValue;
+  var oldValue;
+  var changeCount = 0;
+
+  var internalWatchFn = function(scope) {
+    newValue = watchFn(scope);
+
+    if(_.isObject(newValue)) {
+      if(_.isArrayLike(newValue)) {
+        // detect if value became array
+        if(!_.isArray(oldValue)) {
+          changeCount++;
+          oldValue = [];
+        }
+        // detect if item has been added/removed
+        // from array
+        if(newValue.length !== oldValue.length) {
+          changeCount++;
+          oldValue.length = newValue.length;
+        }
+        // detect replaced/reordered values
+        _.forEach(newValue, function(newItem, i) {
+          if(newItem != oldValue[i]) {
+            changeCount++;
+            oldValue[i] = newItem;
+          }
+        });
+      }
+      else {
+      }
+    }
+    else {
+
+      // check for changes
+      if(newValue !== oldValue) {
+        changeCount++;
+      }
+
+      oldValue = newValue;
+    }
+
+    return changeCount;
+  };
+
+  var internalListenerFn = function() {
+    listenerFn(newValue, oldValue, self);
+  };
+
+  return this.$watch(internalWatchFn, internalListenerFn);
+};

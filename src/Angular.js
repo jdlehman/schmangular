@@ -6,6 +6,11 @@ _.mixin({
       return false;
     }
     var length = obj.length;
-    return _.isNumber(length);
+    // handle objects that have length
+    // these are not array-like
+    return length === 0 || 
+      (_.isNumber(length) &&
+       length > 0 &&
+       (length - 1) in obj);
   }
 });

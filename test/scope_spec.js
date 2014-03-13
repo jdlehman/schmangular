@@ -1161,6 +1161,108 @@ describe('Scope', function() {
         expect(scope.ctr).toBe(2);
       });
 
+      it('notices when the value becomes an object', function() {
+        scope.ctr = 0;
+
+        scope.$watchCollection(
+          function(scope) { return scope.obj; },
+          function(newVal, oldVal, scope) {
+            scope.ctr++;
+          }
+        );
+
+        scope.$digest();
+        expect(scope.ctr).toBe(1);
+
+        scope.obj = {a: 1};
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+      });
+
+      it('notices when an attribute is added to an object', function() {
+        scope.ctr = 0;
+        scope.obj = {a: 1};
+
+        scope.$watchCollection(
+          function(scope) { return scope.obj; },
+          function(newVal, oldVal, scope) {
+            scope.ctr++;
+          }
+        );
+
+        scope.$digest();
+        expect(scope.ctr).toBe(1);
+
+        scope.obj.b = 2;
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+      });
+
+      it('notices when an attribute is changed in an object', function() {
+        scope.ctr = 0;
+        scope.obj = {a: 1};
+
+        scope.$watchCollection(
+          function(scope) { return scope.obj; },
+          function(newVal, oldVal, scope) {
+            scope.ctr++;
+          }
+        );
+
+        scope.$digest();
+        expect(scope.ctr).toBe(1);
+
+        scope.obj.a = 2;
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+      });
+
+      it('notices when an attribute is removed from an object', function() {
+        scope.ctr = 0;
+        scope.obj = {a: 1};
+
+        scope.$watchCollection(
+          function(scope) { return scope.obj; },
+          function(newVal, oldVal, scope) {
+            scope.ctr++;
+          }
+        );
+
+        scope.$digest();
+        expect(scope.ctr).toBe(1);
+
+        delete scope.obj.a;
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+
+        scope.$digest();
+        expect(scope.ctr).toBe(2);
+      });
+
+      it('does not consider any object with a length propery an array', function() {
+        scope.obj = {length: 42, otherKey: 'abc'};
+        var oldValueProvided;
+
+        scope.$watchCollection(
+          function(scope) { return scope.obj; },
+          function(newVal, oldVal, scope) {
+            oldValueProvided = oldVal;
+          }
+        );
+
+        scope.$digest();
+        expect(oldValueProvided).toEqual({length: 42, otherKey: 'abc'});
+      });
+
     });
   });
 

@@ -295,15 +295,21 @@ Scope.prototype.$destroy = function() {
  * For arrays/array-like objects (arguments): detects change in size,
  * reordered, or replaces values, and a non-array becoming an array.
  *
+ * For other objects: detects new, replaced, or deleted attributes
+ * as well as a non-object or array becoming an object.
+ * Handles objects with array attribute.
+ *
  * On changes, executes listenerFn.
  */
 Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
   var self = this;
   var newValue;
   var oldValue;
+  var oldLength;
   var changeCount = 0;
 
   var internalWatchFn = function(scope) {
+    var newLength, key;
     newValue = watchFn(scope);
 
     if(_.isObject(newValue)) {
@@ -313,12 +319,14 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
           changeCount++;
           oldValue = [];
         }
+ 
         // detect if item has been added/removed
         // from array
         if(newValue.length !== oldValue.length) {
           changeCount++;
           oldValue.length = newValue.length;
         }
+
         // detect replaced/reordered values
         _.forEach(newValue, function(newItem, i) {
           if(newItem != oldValue[i]) {
@@ -327,10 +335,47 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
           }
         });
       }
-      else {
+      else {// non-array-like object
+        //detect if item has become an object
+        if(!_.isObject(oldValue) || _.isArrayLike(oldValue)) {
+          changeCount++;
+          oldValue = {};
+          oldLength = 0;
+        }
+
+        // detect new/replaced attributes
+        newLength = 0;
+        for(key in newValue) {
+          if(newValue.hasOwnProperty(key)) {// needed to ensure key doesnt come from prototype
+            newLength++;
+            if(oldValue.hasOwnProperty(key)) {
+              if(oldValue[key] !== newValue[key]) {
+                changeCount++;
+                oldValue[key] = newValue[key];
+              }
+            }
+            else {
+              changeCount++;
+              oldLength++;
+              oldValue[key] = newValue[key];
+            }
+          }
+        }
+
+        // detect if attr has been removed
+        if(oldLength > newLength) {// short circuit
+          changeCount++;
+          for(key in oldValue) {
+            if(oldValue.hasOwnProperty(key) && !newValue.hasOwnProperty(key)) {
+              oldLength--;
+              delete oldValue[key];
+            }
+          }
+        }
+
       }
     }
-    else {
+    else {// not object or array
 
       // check for changes
       if(newValue !== oldValue) {

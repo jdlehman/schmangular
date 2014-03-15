@@ -9,6 +9,7 @@
  * this.$$postDigestQueue: queue of functions to execute AFTER digest cycle
  * this.$$children: array of child scopes
  * this.$$root: make root scope available to children scopes
+ * this.$$listeners: collection of event listeners
  */
 function Scope() {
   this.$$watchers = [];
@@ -18,6 +19,7 @@ function Scope() {
   this.$$postDigestQueue = [];
   this.$$children = [];
   this.$$root = this;
+  this.$$listeners = {};
 }
 
 /*
@@ -229,8 +231,8 @@ Scope.prototype.$$postDigest = function(fn) {
  * Add child scope to $$children array on parent scope.
  * @isolated: if true, scope is isolated and does not protypically inherit from parent. if 
  * false or undefined, it prototypically inherits
- * child.$$watchers: list of watchers on child scope
- * child.$children: list of child scopes
+ *
+ * Each child maintains its own watchers, children, and listeners
  */
 Scope.prototype.$new = function(isolated) {
   var child;
@@ -252,6 +254,7 @@ Scope.prototype.$new = function(isolated) {
   this.$$children.push(child);
   child.$$watchers = [];
   child.$$children = [];
+  child.$$listeners = {};
   child.$parent = this;
   return child;
 };
@@ -393,4 +396,18 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
   };
 
   return this.$watch(internalWatchFn, internalListenerFn);
+};
+
+/*
+ * Add event listener to $$listeners collection
+ * Multiple listeners can be added per eventname.
+ * @eventName: string name of the event
+ * @listener: function to execute on event
+ */
+Scope.prototype.$on = function(eventName, listener) {
+  var listeners = this.$$listeners[eventName];
+  if(!listeners) {
+    this.$$listeners[eventName] = listeners = [];
+  }
+  listeners.push(listener);
 };

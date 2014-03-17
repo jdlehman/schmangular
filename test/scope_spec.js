@@ -1309,7 +1309,7 @@ describe('Scope', function() {
     });
 
     ['$emit', '$broadcast'].forEach(function(method) {
-      it('calls the listeners of the matching event on' + method, function() {
+      it('calls the listeners of the matching event on ' + method, function() {
         var listener1 = jasmine.createSpy();
         var listener2 = jasmine.createSpy();
         scope.$on('someEvent', listener1);
@@ -1319,6 +1319,48 @@ describe('Scope', function() {
 
         expect(listener1).toHaveBeenCalled();
         expect(listener2).not.toHaveBeenCalled();
+      });
+
+      it('passes an event object with a name of listeners on ' + method, function() {
+        var listener = jasmine.createSpy();
+        scope.$on('event', listener);
+
+        scope[method]('event');
+
+        expect(listener).toHaveBeenCalled();
+        expect(listener.calls.mostRecent().args[0].name).toEqual('event');
+      });
+
+      it('passes the same event object to each listener on' + method, function() {
+        var listener1 = jasmine.createSpy();
+        var listener2 = jasmine.createSpy();
+        scope.$on('event', listener1);
+        scope.$on('event', listener2);
+
+        scope[method]('event');
+
+        var event1 = listener1.calls.mostRecent().args[0];
+        var event2 = listener2.calls.mostRecent().args[0];
+
+        expect(event1).toBe(event2);
+      });
+
+      it('passes additional arguments to listeners on ' + method, function() {
+        var listener = jasmine.createSpy();
+        scope.$on('event', listener);
+
+        scope[method]('event', 'and', ['additional', 'args'], '...');
+
+        expect(listener.calls.mostRecent().args[1]).toEqual('and');
+        expect(listener.calls.mostRecent().args[2]).toEqual(['additional', 'args']);
+        expect(listener.calls.mostRecent().args[3]).toEqual('...');
+      });
+
+      it('returns the event object on ' + method, function() {
+        var returnedEvent = scope[method]('event');
+
+        expect(returnedEvent).toBeDefined();
+        expect(returnedEvent.name).toEqual('event');
       });
     });
 

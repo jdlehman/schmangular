@@ -414,29 +414,35 @@ Scope.prototype.$on = function(eventName, listener) {
 
 /*
  * Emits an event on the scope. Calls all listeners that have
- * a matching eventName
+ * a matching eventName. Passes along additional arguments. Returns event object
  * @eventName: the name of the event emitted
  */
 Scope.prototype.$emit = function(eventName) {
-  this.$$fireEventOnScope(eventName);
+  var additionalArgs = _.rest(arguments);
+  return this.$$fireEventOnScope(eventName, additionalArgs);
 };
 
 /*
  * Broadcasts an event on the scope. Calls all listeners that have
- * a matching eventName
+ * a matching eventName. Passes along additional arguments. Returns event object
  * @eventName: the name of the event broadcasted
  */
 Scope.prototype.$broadcast = function(eventName) {
-  this.$$fireEventOnScope(eventName);
+  var additionalArgs = _.rest(arguments);
+  return this.$$fireEventOnScope(eventName, additionalArgs);
 };
 
 /*
- * Fires all events on scope that match event name of listeners
+ * Fires all events on scope that match event name of listeners.
+ * Calls the listener with any additional arguments
  * @eventName: name of listener event
  */
-Scope.prototype.$$fireEventOnScope = function(eventName) {
+Scope.prototype.$$fireEventOnScope = function(eventName, additionalArgs) {
+  var event = {name: eventName};
+  var listenerArgs = [event].concat(additionalArgs);
   var listeners = this.$$listeners[eventName] || [];
   listeners.forEach(function(listener) {
-    listener();
+    listener.apply(null, listenerArgs);
   });
+  return event;
 };

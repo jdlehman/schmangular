@@ -401,6 +401,7 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
 /*
  * Add event listener to $$listeners collection
  * Multiple listeners can be added per eventname.
+ * Returns a function to deregister the event
  * @eventName: string name of the event
  * @listener: function to execute on event
  */
@@ -410,6 +411,12 @@ Scope.prototype.$on = function(eventName, listener) {
     this.$$listeners[eventName] = listeners = [];
   }
   listeners.push(listener);
+  return function() {
+    var index = listeners.indexOf(listener);
+    if(index >= 0) {
+      listeners[index] = null;
+    }
+  };
 };
 
 /*
@@ -434,15 +441,23 @@ Scope.prototype.$broadcast = function(eventName) {
 
 /*
  * Fires all events on scope that match event name of listeners.
- * Calls the listener with any additional arguments
+ * Calls valid and matching listeners with any additional arguments or 
+ * removes any null listeners when iterating over matching listeners
  * @eventName: name of listener event
  */
 Scope.prototype.$$fireEventOnScope = function(eventName, additionalArgs) {
   var event = {name: eventName};
   var listenerArgs = [event].concat(additionalArgs);
   var listeners = this.$$listeners[eventName] || [];
-  listeners.forEach(function(listener) {
-    listener.apply(null, listenerArgs);
-  });
+  var i = 0;
+  while(i < listeners.length) {
+    // remove the listener if null
+    if(listeners[i] === null) {
+      listeners.splice(i, 1);
+    } else {
+      listeners[i].apply(null, listenerArgs);
+      i++;
+    }
+  }
   return event;
 };

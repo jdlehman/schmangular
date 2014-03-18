@@ -1362,6 +1362,32 @@ describe('Scope', function() {
         expect(returnedEvent).toBeDefined();
         expect(returnedEvent.name).toEqual('event');
       });
+
+      it('can be de-registered ' + method, function() {
+        var listener = jasmine.createSpy();
+        var deregister = scope.$on('event', listener);
+
+        deregister();
+
+        scope[method]('event');
+
+        expect(listener).not.toHaveBeenCalled();
+      });
+
+      it('does not skip the next listener when removed on ' + method, function() {
+        var deregister;
+        var listener = function() {
+          deregister();
+        };
+        var nextListener = jasmine.createSpy();
+
+        deregister = scope.$on('event', listener);
+        scope.$on('event', nextListener);
+
+        scope[method]('event');
+
+        expect(nextListener).toHaveBeenCalled();
+      });
     });
 
 

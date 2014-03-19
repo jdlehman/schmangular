@@ -421,7 +421,8 @@ Scope.prototype.$on = function(eventName, listener) {
 
 /*
  * Emits an event on the scope. Calls all listeners that have
- * a matching eventName. Passes along additional arguments. Returns event object
+ * a matching eventName. Propogates up scope to parents.
+ * Passes along additional arguments. Returns event object
  * @eventName: the name of the event emitted
  */
 Scope.prototype.$emit = function(eventName) {
@@ -437,13 +438,17 @@ Scope.prototype.$emit = function(eventName) {
 
 /*
  * Broadcasts an event on the scope. Calls all listeners that have
- * a matching eventName. Passes along additional arguments. Returns event object
+ * a matching eventName. Propogates down scope to children and isolated children.
+ * Passes along additional arguments. Returns event object
  * @eventName: the name of the event broadcasted
  */
 Scope.prototype.$broadcast = function(eventName) {
   var event = {name: eventName};
   var listenerArgs = [event].concat(_.rest(arguments));
-  this.$$fireEventOnScope(eventName, listenerArgs);
+  this.$$everyScope(function(scope) {
+    scope.$$fireEventOnScope(eventName, listenerArgs);
+    return true;
+  });
   return event;
 };
 

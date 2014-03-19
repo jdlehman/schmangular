@@ -1390,6 +1390,32 @@ describe('Scope', function() {
       });
     });
 
+    it('propogates up the scope hierarcy on $emit', function() {
+      var parentListener = jasmine.createSpy();
+      var scopeListener = jasmine.createSpy();
+
+      parent.$on('event', parentListener);
+      scope.$on('event', scopeListener);
+
+      scope.$emit('event');
+
+      expect(scopeListener).toHaveBeenCalled();
+      expect(parentListener).toHaveBeenCalled();
+    });
+
+    it('propogates the same event up on $emit', function() {
+      var parentListener = jasmine.createSpy();
+      var scopeListener = jasmine.createSpy();
+
+      parent.$on('event', parentListener);
+      scope.$on('event', scopeListener);
+
+      scope.$emit('event');
+
+      var scopeEvent = scopeListener.calls.mostRecent().args[0];
+      var parentEvent = parentListener.calls.mostRecent().args[0];
+      expect(scopeEvent).toBe(parentEvent);
+    });
 
   });
 

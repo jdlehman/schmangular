@@ -425,8 +425,14 @@ Scope.prototype.$on = function(eventName, listener) {
  * @eventName: the name of the event emitted
  */
 Scope.prototype.$emit = function(eventName) {
-  var additionalArgs = _.rest(arguments);
-  return this.$$fireEventOnScope(eventName, additionalArgs);
+  var event = {name: eventName};
+  var listenerArgs = [event].concat(_.rest(arguments));
+  var scope = this;
+  do {
+    scope.$$fireEventOnScope(eventName, listenerArgs);
+    scope = scope.$parent;
+  } while(scope);
+  return event;
 };
 
 /*
@@ -435,19 +441,19 @@ Scope.prototype.$emit = function(eventName) {
  * @eventName: the name of the event broadcasted
  */
 Scope.prototype.$broadcast = function(eventName) {
-  var additionalArgs = _.rest(arguments);
-  return this.$$fireEventOnScope(eventName, additionalArgs);
+  var event = {name: eventName};
+  var listenerArgs = [event].concat(_.rest(arguments));
+  this.$$fireEventOnScope(eventName, listenerArgs);
+  return event;
 };
 
 /*
  * Fires all events on scope that match event name of listeners.
- * Calls valid and matching listeners with any additional arguments or 
+ * Calls valid and matching listenerArgs or 
  * removes any null listeners when iterating over matching listeners
  * @eventName: name of listener event
  */
-Scope.prototype.$$fireEventOnScope = function(eventName, additionalArgs) {
-  var event = {name: eventName};
-  var listenerArgs = [event].concat(additionalArgs);
+Scope.prototype.$$fireEventOnScope = function(eventName, listenerArgs) {
   var listeners = this.$$listeners[eventName] || [];
   var i = 0;
   while(i < listeners.length) {
@@ -459,5 +465,4 @@ Scope.prototype.$$fireEventOnScope = function(eventName, additionalArgs) {
       i++;
     }
   }
-  return event;
 };

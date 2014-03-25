@@ -422,18 +422,27 @@ Scope.prototype.$on = function(eventName, listener) {
 /*
  * Emits an event on the scope. Calls all listeners that have
  * a matching eventName. Propogates up scope to parents.
- * Passes along additional arguments. Returns event object
+ * Passes along additional arguments. Returns event object.
+ *
+ * Event object includes name, targetScope, and stopPropagation
  * @eventName: the name of the event emitted
  */
 Scope.prototype.$emit = function(eventName) {
-  var event = {name: eventName, targetScope: this};
+  var propagationStopped = false;
+  var event = {
+    name: eventName,
+    targetScope: this,
+    stopPropagation: function() {
+      propagationStopped = true;
+    }
+  };
   var listenerArgs = [event].concat(_.rest(arguments));
   var scope = this;
   do {
     event.currentScope = scope;
     scope.$$fireEventOnScope(eventName, listenerArgs);
     scope = scope.$parent;
-  } while(scope);
+  } while(scope && !propagationStopped);
   return event;
 };
 

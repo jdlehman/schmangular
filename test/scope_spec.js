@@ -1508,6 +1508,34 @@ describe('Scope', function() {
       expect(currentScopeOnScope).toBe(scope);
       expect(currentScopeOnChild).toBe(child);
      });
+
+     it('does not propogate to parents when stopped', function() {
+       var scopeListener = function(event) {
+         event.stopPropagation();
+       };
+       var parentListener = jasmine.createSpy();
+
+       scope.$on('event', scopeListener);
+       parent.$on('event', parentListener);
+
+       scope.$emit('event');
+
+       expect(parentListener).not.toHaveBeenCalled();
+     });
+
+     it('is received by listeners on current scope after being stopped', function() {
+       var listener1 = function(event) {
+         event.stopPropagation();
+       };
+       var listener2 = jasmine.createSpy();
+
+       scope.$on('event', listener1);
+       scope.$on('event', listener2);
+
+       scope.$emit('event');
+
+       expect(listener2).toHaveBeenCalled();
+     });
   });
 
 });

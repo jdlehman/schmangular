@@ -423,8 +423,6 @@ Scope.prototype.$on = function(eventName, listener) {
  * Emits an event on the scope. Calls all listeners that have
  * a matching eventName. Propogates up scope to parents.
  * Passes along additional arguments. Returns event object.
- *
- * Event object includes name, targetScope, and stopPropagation
  * @eventName: the name of the event emitted
  */
 Scope.prototype.$emit = function(eventName) {
@@ -434,6 +432,9 @@ Scope.prototype.$emit = function(eventName) {
     targetScope: this,
     stopPropagation: function() {
       propagationStopped = true;
+    },
+    preventDefault: function() {
+      event.defaultPrevented = true;
     }
   };
   var listenerArgs = [event].concat(_.rest(arguments));
@@ -453,7 +454,13 @@ Scope.prototype.$emit = function(eventName) {
  * @eventName: the name of the event broadcasted
  */
 Scope.prototype.$broadcast = function(eventName) {
-  var event = {name: eventName, targetScope: this};
+  var event = {
+    name: eventName,
+    targetScope: this,
+    preventDefault: function() {
+      event.defaultPrevented = true;
+    }
+  };
   var listenerArgs = [event].concat(_.rest(arguments));
   this.$$everyScope(function(scope) {
     event.currentScope = scope;

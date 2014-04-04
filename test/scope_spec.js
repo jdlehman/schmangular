@@ -1399,6 +1399,19 @@ describe('Scope', function() {
 
         expect(event.defaultPrevented).toBe(true);
       });
+
+      it('does not stop on exceptions on ' + method, function() {
+        var listener1 = function(event) {
+          throw 'listener1 throwing an exception';
+        };
+        var listener2 = jasmine.createSpy();
+        scope.$on('event', listener1);
+        scope.$on('event', listener2);
+
+        scope[method]('event');
+
+        expect(listener2).toHaveBeenCalled();
+      });
     });
 
     it('propogates up the scope hierarcy on $emit', function() {

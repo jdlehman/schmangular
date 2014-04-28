@@ -29,6 +29,10 @@
     "expect": false,
 
     // general js
-    "setTimeout": false
+    "setTimeout": false,
+    "console": false,
+
+    "parse": false,
+    "Scope": false
   }
 }

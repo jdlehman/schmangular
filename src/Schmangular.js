@@ -8,7 +8,7 @@ _.mixin({
     var length = obj.length;
     // handle objects that have length
     // these are not array-like
-    return length === 0 || 
+    return length === 0 ||
       (_.isNumber(length) &&
        length > 0 &&
        (length - 1) in obj);

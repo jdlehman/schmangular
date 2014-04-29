@@ -29,7 +29,8 @@ Lexer.prototype.lex = function(text) {
 
   while(this.index < this.text.length) {
     this.ch = this.text.charAt(this.index);
-    if(this.isNumber(this.ch)) {
+    if(this.isNumber(this.ch) ||
+       (this.ch === '.' && this.isNumber(this.peek()))) {
       this.readNumber();
     } else {
       throw 'Unexpected next character: ' + this.ch;
@@ -57,7 +58,7 @@ Lexer.prototype.readNumber = function() {
   // build up the number
   while(this.index < this.text.length) {
     var ch = this.text.charAt(this.index);
-    if(this.isNumber(ch)) {
+    if(ch === '.' || this.isNumber(ch)) {
       number += ch;
     } else {
       break;
@@ -71,6 +72,16 @@ Lexer.prototype.readNumber = function() {
     fn: _.constant(number),
     json: true
   });
+};
+
+/* 
+ * returns the next character in the text
+ * or false if there is not one
+ */
+Lexer.prototype.peek = function() {
+  return this.index < this.text.length - 1 ?
+    this.text.charAt(this.index + 1) : 
+    false;
 };
 
 

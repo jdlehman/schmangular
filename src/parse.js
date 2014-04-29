@@ -68,7 +68,8 @@ Lexer.prototype.readNumber = function() {
   number = 1 * number;
   this.tokens.push({
     text: number,
-    fn: _.constant(number)
+    fn: _.constant(number),
+    json: true
   });
 };
 
@@ -84,5 +85,19 @@ function Parser(lexer) {
 
 Parser.prototype.parse = function(text) {
   this.tokens = this.lexer.lex(text);
-  return _.first(this.tokens).fn;
+  return this.primary();
+};
+
+/*
+ * Sets constant and literal values
+ * for the primary (first token)
+ */
+Parser.prototype.primary = function() {
+  var token = this.tokens[0];
+  var primary = token.fn;
+  if(token.json) {
+    primary.constant = true;
+    primary.literal = true;
+  }
+  return primary;
 };

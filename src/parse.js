@@ -51,17 +51,33 @@ Lexer.prototype.isNumber = function(ch) {
 /*
  * Loops over the text, character by character,
  * building up the number as it goes
- * then pushes the number it built as a token
+ * then pushes the number it built as a token.
+ * handles scientific notation and decimals
  */
 Lexer.prototype.readNumber = function() {
   var number = '';
   // build up the number
   while(this.index < this.text.length) {
-    var ch = this.text.charAt(this.index);
+    var ch = this.text.charAt(this.index).toLowerCase();
     if(ch === '.' || this.isNumber(ch)) {
       number += ch;
     } else {
-      break;
+      // handle scientific notation
+      var nextCh = this.peek();
+      var prevCh = number.charAt(number.length - 1);
+
+      if(ch == 'e' && this.isExpOperator(nextCh)) {
+        number += ch;
+      } else if(this.isExpOperator(ch) && prevCh === 'e' &&
+                nextCh && this.isNumber(nextCh)) {
+        number += ch;
+      } else if(this.isExpOperator(ch) && prevCh === 'e' &&
+                (!nextCh || !this.isNumber(nextCh))) {
+        throw 'Invalid exponent';
+      }
+      else {
+        break;
+      }
     }
     this.index++;
   }
@@ -84,6 +100,13 @@ Lexer.prototype.peek = function() {
     false;
 };
 
+/*
+ * Return true if the character is an
+ * exponent operator, false otherwise
+ */
+Lexer.prototype.isExpOperator = function(ch) {
+  return ch === '-' || ch === '+' || this.isNumber(ch);
+};
 
 /*
  * Takes collection of tokens and returns

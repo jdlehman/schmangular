@@ -1,5 +1,14 @@
 'use strict';
 
+var ESCAPES = {
+  'n': '\n',
+  'f': '\f',
+  'r': '\r',
+  't': '\t',
+  'v': '\v',
+  '\'': '\'',
+  '"': '"' };
+
 function parse(expr) {
   var lexer = new Lexer();
   var parser = new Parser(lexer);
@@ -32,6 +41,8 @@ Lexer.prototype.lex = function(text) {
     if(this.isNumber(this.ch) ||
        (this.ch === '.' && this.isNumber(this.peek()))) {
       this.readNumber();
+    } else if(this.ch ==='\'' || this.ch === '"') {
+      this.readString(this.ch);
     } else {
       throw 'Unexpected next character: ' + this.ch;
     }
@@ -46,6 +57,47 @@ Lexer.prototype.lex = function(text) {
  */
 Lexer.prototype.isNumber = function(ch) {
   return '0' <= ch && ch <= '9';
+};
+
+/*
+ * Loops over the test, character by character,
+ * building the string as it goes,
+ * then pushes string it built as a token.
+ * Handles character escapes and single and double quotes
+ */
+Lexer.prototype.readString = function(quote) {
+  this.index++;
+  var string = '';
+  var escape = false;
+  // build up string
+  while(this.index < this.text.length) {
+    var ch = this.text.charAt(this.index);
+    if(escape) { // check if in escape mode
+      var replacement = ESCAPES[ch];
+      if(replacement) {
+        string += replacement;
+      } else {
+        string += ch;
+      }
+      escape = false;
+    } else if(ch === quote) { // check if string terminates
+      this.index++;
+      this.tokens.push({
+        text: quote + string + quote,
+        fn: _.constant(string),
+        json: true
+      });
+      return;
+    } else if(ch === '\\') {
+      // go into escape mode
+      escape = true;
+    } else {
+      string += ch;
+    }
+    this.index++;
+  }
+
+  throw 'Unmatched quote';
 };
 
 /*
@@ -74,8 +126,7 @@ Lexer.prototype.readNumber = function() {
       } else if(this.isExpOperator(ch) && prevCh === 'e' &&
                 (!nextCh || !this.isNumber(nextCh))) {
         throw 'Invalid exponent';
-      }
-      else {
+      } else {
         break;
       }
     }

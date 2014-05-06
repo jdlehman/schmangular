@@ -73,11 +73,21 @@ Lexer.prototype.readString = function(quote) {
   while(this.index < this.text.length) {
     var ch = this.text.charAt(this.index);
     if(escape) { // check if in escape mode
-      var replacement = ESCAPES[ch];
-      if(replacement) {
-        string += replacement;
+      if(ch === 'u') {// handle unicode characters
+        var hex = this.text.substring(this.index + 1, this.index + 5);
+        // check that hex is valid unicode
+        if(!hex.match(/[\da-f]{4}/i)) {
+          throw 'Invalid unicode escape';
+        }
+        this.index += 4;
+        string = String.fromCharCode(parseInt(hex, 16));
       } else {
-        string += ch;
+        var replacement = ESCAPES[ch];
+        if(replacement) {
+          string += replacement;
+        } else {
+          string += ch;
+        }
       }
       escape = false;
     } else if(ch === quote) { // check if string terminates

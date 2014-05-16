@@ -120,4 +120,11 @@ describe('parse', function() {
     });
   });
 
+  describe('whitespace', function() {
+    it('ignores whitespace', function() {
+      var fn = parse(' \n42 ');
+      expect(fn()).toEqual(42);
+    });
+  }):
+
 });

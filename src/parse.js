@@ -295,11 +295,15 @@ Parser.prototype.arrayDeclaration = function() {
     } while(this.expect(','));
   }
   this.consume(']');
-  return function() {
-    return _.map(elementFns, function(elementFn) {
+  var arrayFn = function() {
+    var elements = _.map(elementFns, function(elementFn) {
       return elementFn();
     });
+    return elements;
   };
+  arrayFn.literal = true;
+  arrayFn.constant = true;
+  return arrayFn;
 };
 
 /*

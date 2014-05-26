@@ -142,6 +142,12 @@ describe('parse', function() {
       var fn = parse('[1, 2, 3,]');
       expect(fn()).toEqual([1, 2, 3]);
     });
+
+    it('makes array literals literals and constants', function() {
+      var fn = parse('[1, 2, 3]');
+      expect(fn.literal).toBe(true);
+      expect(fn.constant).toBe(true);
+    });
   });
 
 });

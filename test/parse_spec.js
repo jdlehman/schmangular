@@ -125,6 +125,18 @@ describe('parse', function() {
       var fn = parse(' \n42 ');
       expect(fn()).toEqual(42);
     });
-  }):
+  });
+
+  describe('parsing arrays', function() {
+    it('will parse an empty array', function() {
+      var fn = parse('[]');
+      expect(fn()).toEqual([]);
+    });
+
+    it('will parse a non-empty array', function() {
+      var fn = parse('[1, "two", [3]]');
+      expect(fn()).toEqual([1, 'two', [3]]);
+    });
+  });
 
 });

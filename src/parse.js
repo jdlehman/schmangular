@@ -31,6 +31,7 @@ function Lexer() {
 }
 
 /*
+ * Breaks text into tokens.
  * @text: string to break into tokens
  * this.text: the original string
  * this.index: current character index in string
@@ -50,7 +51,14 @@ Lexer.prototype.lex = function(text) {
       this.readNumber();
     } else if(this.ch ==='\'' || this.ch === '"') {
       this.readString(this.ch);
-    } else if(this.isIdent(this.ch)) {
+    } else if(this.ch === '[' || this.ch === ']'
+             || this.ch === ',') {
+      this.tokens.push({
+        text: this.ch,
+        json: true
+      });
+      this.index++;
+    } else if(this.isIdent(this.ch)) { // read identifier
       this.readIdent();
     } else if(this.isWhitespace(this.ch)) {
       this.index++;
@@ -95,6 +103,7 @@ Lexer.prototype.isWhitespace = function(ch) {
  * building the string as it goes,
  * then pushes string it built as a token.
  * Handles character escapes and single and double quotes
+ * @quote: optional, quote type (' or ")
  */
 Lexer.prototype.readString = function(quote) {
   this.index++;
@@ -182,6 +191,10 @@ Lexer.prototype.readNumber = function() {
   });
 };
 
+/*
+ * Loops over the text character
+ * by character to build the identifier
+ */
 Lexer.prototype.readIdent = function() {
   var text = '';
   while(this.index < this.text.length) {
@@ -203,13 +216,13 @@ Lexer.prototype.readIdent = function() {
   this.tokens.push(token);
 };
 
-/* 
+/*
  * returns the next character in the text
  * or false if there is not one
  */
 Lexer.prototype.peek = function() {
   return this.index < this.text.length - 1 ?
-    this.text.charAt(this.index + 1) : 
+    this.text.charAt(this.index + 1) :
     false;
 };
 
@@ -240,11 +253,77 @@ Parser.prototype.parse = function(text) {
  * for the primary (first token)
  */
 Parser.prototype.primary = function() {
-  var token = this.tokens[0];
-  var primary = token.fn;
-  if(token.json) {
-    primary.constant = true;
-    primary.literal = true;
+  var primary;
+  if(this.expect('[')) {
+    primary = this.arrayDeclaration();
+  } else {
+    var token = this.expect();
+    primary = token.fn
+    if(token.json) {
+      primary.constant = true;
+      primary.literal = true;
+    }
   }
   return primary;
+};
+
+/*
+ * consumes and returns the next token.
+ * if an expected token is given, return and
+ * consume the next token if it matches, otherwise
+ * do nothing.
+ * returns undefined if no more tokens
+ * @e: expected token (optional)
+ */
+Parser.prototype.expect = function(e) {
+  var token = this.peek(e);
+  if(token) {
+    return this.tokens.shift();
+  }
+};
+
+/*
+ * Recursively builds array from 
+ * primary expressions.
+ */
+Parser.prototype.arrayDeclaration = function() {
+  var elementFns = [];
+  if(!this.peek(']')) {
+    do {
+      elementFns.push(this.primary());
+    } while(this.expect(','));
+  }
+  this.consume(']');
+  return function() {
+    return _.map(elementFns, function(elementFn) {
+      return elementFn();
+    });
+  };
+};
+
+/*
+ * Consume the expected token. If the next token
+ * does not match, throw an error.
+ * This essentially does the same thing as Parser::expect
+ * but throws an error when the matching token is not found.
+ * @e: expected token
+ */
+Parser.prototype.consume = function(e) {
+  if(!this.expect(e)) {
+    throw 'Unexpected. Expecting' + e;
+  }
+};
+
+/*
+ * Peeks at next element and returns it.
+ * Or returns expected token if it is the next token
+ * @e: expected token (optional)
+ */
+Parser.prototype.peek = function(e) {
+  if(this.tokens.length > 0) {
+    var text = this.tokens[0].text;
+    if(text === e || !e) {
+      return this.tokens[0];
+    }
+  }
 };

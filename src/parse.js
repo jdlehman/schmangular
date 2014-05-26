@@ -283,13 +283,14 @@ Parser.prototype.expect = function(e) {
 };
 
 /*
- * Recursively builds array from 
+ * Recursively builds array from
  * primary expressions.
  */
 Parser.prototype.arrayDeclaration = function() {
   var elementFns = [];
   if(!this.peek(']')) {
     do {
+      if(this.peek(']')) { break; };
       elementFns.push(this.primary());
     } while(this.expect(','));
   }
